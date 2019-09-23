@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdlib.h>
 
-extern void quit(unsigned char status);
+extern void __fastcall__ quit(unsigned char status);
 
 #define START_TEST int main(void) \
 {

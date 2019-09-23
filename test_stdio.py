@@ -1,11 +1,15 @@
-import unittest
-from x16test import x16Test, TestResult
+from unittest import TestCase, expectedFailure
+from x16test import Test, TestResult
 
-class TestStdio(unittest.TestCase):
-    src = []
+class TestStdio(TestCase):
+    src = ["quit.s"]
     src_path = "src/"
 
-    @x16Test("stdio.c")
+    @Test("stdio.c")
     def test_Printf(self, result: TestResult):
-        self.assertEqual(result.CPU.A, 0x00)
-        self.assertEqual(result.RAM[0x90], 0x00)
+        pass
+
+    @expectedFailure
+    @Test("bcd.s")
+    def test_BCD(self, result: TestResult):
+        self.assertEqual(result.RAM[0x0], 32)

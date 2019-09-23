@@ -1,47 +1,53 @@
 import unittest
 import os.path
 import re
+import struct
 from functools import wraps
 from subprocess import run
 
 class CPUResult:
-    def __init__(self, b):
-        self.A = b[0]
-        self.X = b[1]
-        self.Y = b[2]
-        self.SP = b[3]
-        self.STATUS = b[4]
-        # TODO  TO uint_16!
-        self.PC = 0
+    def __init__(self, file):
+        s = struct.unpack('<BBBBBH', file.read(7))
+
+        self.A = s[0]
+        self.X = s[1]
+        self.Y = s[2]
+        self.SP = s[3]
+        self.STATUS = s[4]
+        self.PC = s[5]
 
 class VRAMResult:
-    def __init__(self, b):
-        self.RAM = 0
-        self.COMPOSER = 0
-        self.LAYER0 = 0
-        self.LAYER1 = 0
-        self.SPRITE_ATTRIBUTES = 0
-        self.SPRITE_DATA = 0
+    def __init__(self, file):
+        self.RAM = file.read(128 * 1024)
+        self.COMPOSER = file.read(32)
+        self.PALLETE = file.read(512)
+        self.LAYER0 = file.read(16)
+        self.LAYER1 = file.read(16)
+        self.SPRITE_ATTRIBUTES = file.read(16)
+        self.SPRITE_DATA = file.read(2 * 1024)
 
 class TestResult:
-    def __init__(self, file, stdout):
-        self.CPU = CPUResult(file.read(7))
+    def __init__(self, file, stdout, shouldfail):
+        self.CPU = CPUResult(file)
         self.RAM = file.read(4 * 1024)
         self.BANK = file.read(2 * 1024 * 1024)
-        # TODO
-        self.VIDEO = VRAMResult(None)
-        self.is_success = (self.RAM[0x90] == 0)
+        self.VIDEO = VRAMResult(file)
+        if shouldfail:
+            self.is_success = (self.RAM[0x90] != 0)
+        else:
+            self.is_success = (self.RAM[0x90] == 0)
         self.stdout = stdout
         pass
 
-class x16Test(object):
+class Test(object):
 
-    def __init__(self, *args):
+    def __init__(self, *args, shouldfail=False):
         self.args = args
         self.sources = []
+        self.shouldfail = shouldfail
 
     def __call__(self, func):
-        def x16Test_wrapper(test):              
+        def x16Test_wrapper(test):          
             path = self.__build(test)
             result = self.__run(path)
 
@@ -70,9 +76,6 @@ class x16Test(object):
             else:
                 raise Exception("the test class attribute 'src_path' is not a string")
 
-        # Add special quit command
-        self.sources += ["quit.s"]
-
         # compile + link files (using cl65!)
         return self.__compile()
 
@@ -99,13 +102,13 @@ class x16Test(object):
 
         # Run with x16emu -dump CRBV, capture input and test if there is an error / state of STATUS
         # TODO: We could try to add a special encoding for the special codepage
-        ret = run(["x16emu", "-dump", "CRBV", "-prg", "test.prg", "-run", "-echo"], capture_output=True, encoding="latin_1")
+        ret = run(["x16emu", "-dump", "CRBV", "-prg", "test.prg", "-run", "-echo"], capture_output=True, encoding="latin_1", timeout=30)
         if ret.returncode != 0:
             raise Exception("error while running test:\n" + ret.stderr)
         return self.__parseResult(ret.stdout)
 
     def __parseResult(self, stdout):
         dump = open("dump.bin","rb")
-        result = TestResult(dump, stdout)
+        result = TestResult(dump, stdout, self.shouldfail)
         dump.close()
         return result
