@@ -5,11 +5,11 @@ class TestStdio(TestCase):
     src = ["quit.s"]
     src_path = "src/"
 
-    @Test("stdio.c")
-    def test_Printf(self, result: TestResult):
+    @Test("printf.c")
+    def test_printf(self, result: TestResult):
         pass
 
     @expectedFailure
     @Test("bcd.s")
-    def test_BCD(self, result: TestResult):
+    def test_bcd(self, result: TestResult):
         self.assertEqual(result.RAM[0x0], 32)
