@@ -8,7 +8,6 @@ from subprocess import run
 class CPUResult:
     def __init__(self, file):
         s = struct.unpack('<BBBBBH', file.read(7))
-
         self.A = s[0]
         self.X = s[1]
         self.Y = s[2]
@@ -37,7 +36,6 @@ class TestResult:
         else:
             self.is_success = (self.RAM[0x90] == 0)
         self.stdout = stdout
-        pass
 
 class Test(object):
 
@@ -101,8 +99,7 @@ class Test(object):
                 os.remove(os.path.join(os.getcwd(), item))
 
         # Run with x16emu -dump CRBV, capture input and test if there is an error / state of STATUS
-        # TODO: We could try to add a special encoding for the special codepage
-        ret = run(["x16emu", "-dump", "CRBV", "-prg", "test.prg", "-run", "-echo"], capture_output=True, encoding="latin_1", timeout=30)
+        ret = run(["x16emu", "-dump", "CRBV", "-prg", "test.prg", "-run", "-echo"], capture_output=True, encoding="iso8859_15", timeout=30)
         if ret.returncode != 0:
             raise Exception("error while running test:\n" + ret.stderr)
         return self.__parseResult(ret.stdout)

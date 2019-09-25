@@ -7,7 +7,6 @@
         adc     #$15
         sta     $0000
         
-        ; 0 = test successfully executed
-        lda     #$0000
+        lda     #$0000 ; quit(0)
         jsr     _quit
         rts
